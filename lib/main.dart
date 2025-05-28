@@ -57,7 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
     ["3", "13:00 ~ 14:13", "70분", "45", "영어"],
     ["4", "14:30 ~ 15:00", "30분", "20", "한국사"],
     ["4", "15:08 ~ 15:48", "40분", "20", "통합사회"],
-    ["4", "15:50 ~ 16:20", "40분", "20", "통합과학"],
+    ["4", "15:55 ~ 16:35", "40분", "20", "통합과학"],
   ];
 
   final List<List<String>> regularExam = [
@@ -70,38 +70,122 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isRegularExam = false;
   List<List<String>> currentTimeTable = [];
 
-  // 위젯 생성 시 실행될 함수 - 기본 시간표는 1학년
   @override
   void initState() {
     super.initState();
     currentTimeTable = firstGrade;
   }
 
-  // [ 시간표 | 시계 ]
+  bool isCurrentTimeSlot(String timeSlot) {
+    final times = timeSlot.trim().split('~');
+    if (times.length != 2) return false;
+
+    final now = DateTime.now();
+    final currentTime =
+        DateTime(now.year, now.month, now.day, now.hour, now.minute);
+
+    // Parse start time
+    final startTimeParts = times[0].trim().split(':');
+    final startTime = DateTime(now.year, now.month, now.day,
+        int.parse(startTimeParts[0]), int.parse(startTimeParts[1]));
+
+    // Parse end time
+    final endTimeParts = times[1].trim().split(':');
+    final endTime = DateTime(now.year, now.month, now.day,
+        int.parse(endTimeParts[0]), int.parse(endTimeParts[1]));
+
+    return currentTime.isAfter(startTime) && currentTime.isBefore(endTime);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: [
-          // 왼쪽 - 시간표
           SizedBox(
-            width: MediaQuery.of(context).size.width * 0.5, // 전체 화면의 50%
-            child: const SingleChildScrollView(
+            width: MediaQuery.of(context).size.width * 0.5,
+            child: SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "시간표",
+                    DigitalClock(
+                      showSeconds: true,
+                      isLive: true,
+                      textScaleFactor: 3,
+                      datetime: DateTime.now(),
+                    ),
+                    if (isRegularExam)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          DateTime.now().toString().substring(0, 10),
+                          style: const TextStyle(fontSize: 30),
+                        ),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          "학교 코드: 11186",
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Table(
+                        columnWidths: const <int, TableColumnWidth>{
+                          0: FixedColumnWidth(60),
+                          1: FlexColumnWidth(),
+                          2: FixedColumnWidth(80),
+                          3: FixedColumnWidth(80),
+                          4: FixedColumnWidth(110),
+                        },
+                        defaultVerticalAlignment:
+                            TableCellVerticalAlignment.middle,
+                        border: TableBorder.all(),
+                        children: List<TableRow>.generate(
+                          currentTimeTable.length,
+                          (index) => TableRow(
+                            decoration: index == 0
+                                ? BoxDecoration(
+                                    color: Colors.grey[300],
+                                  )
+                                : isCurrentTimeSlot(currentTimeTable[index][1])
+                                    ? const BoxDecoration(
+                                        color:
+                                            Color.fromARGB(255, 255, 139, 139),
+                                      )
+                                    : null,
+                            children: List.generate(
+                              currentTimeTable[0].length,
+                              (columnIndex) => TableCell(
+                                child: Center(
+                                  child: Text(
+                                    currentTimeTable[index][columnIndex],
+                                    style: columnIndex == 4 &&
+                                            currentTimeTable[index][columnIndex]
+                                                    .length >=
+                                                4
+                                        ? const TextStyle(fontSize: 25)
+                                        : const TextStyle(fontSize: 30),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-
-          // 중앙 - 세로선
           const SizedBox(
             width: 0,
             child: VerticalDivider(
@@ -111,8 +195,6 @@ class _MyHomePageState extends State<MyHomePage> {
               endIndent: 10,
             ),
           ),
-
-          // 오른쪽 - 시계
           SizedBox(
             width: MediaQuery.of(context).size.width * 0.5,
             child: SingleChildScrollView(
@@ -130,6 +212,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       showAllNumbers: true,
                       height: MediaQuery.of(context).size.height * 0.73,
                     ),
+                    const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Text("타종과 수 초의 차이가 있을 수 있으므로 시계는 보조적으로 사용하세요"),
+                    ),
                   ],
                 ),
               ),
@@ -137,17 +223,14 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-
-      // 하단 - 시간표 선택 버튼
       bottomNavigationBar: Container(
-        height: MediaQuery.of(context).size.height * 0.08, // 전체 화면의 8%
+        height: MediaQuery.of(context).size.height * 0.08,
         decoration: BoxDecoration(
           color: Colors.grey[100],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // 1학년 버튼
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: TextButton(
@@ -157,7 +240,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         : Colors.grey[100],
                   ),
                   onPressed: () {
-                    print("1학년");
                     setState(() {
                       currentTimeTable = firstGrade;
                       isRegularExam = false;
@@ -165,34 +247,42 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   child: const Text('1학년')),
             ),
-
-            // 구분선
             const VerticalDivider(
               color: Colors.grey,
               thickness: 1,
               indent: 10,
               endIndent: 10,
             ),
-
-            // 2,3학년 버튼
             TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: currentTimeTable == secondThirdGrade
+                      ? Colors.grey[300]
+                      : Colors.grey[100],
+                ),
                 onPressed: () {
-                  print("2,3학년");
+                  setState(() {
+                    currentTimeTable = secondThirdGrade;
+                    isRegularExam = false;
+                  });
                 },
                 child: const Text('2,3학년')),
-
-            // 구분선
             const VerticalDivider(
               color: Colors.grey,
               thickness: 1,
               indent: 10,
               endIndent: 10,
             ),
-
-            // 정기고사 버튼
             TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: currentTimeTable == regularExam
+                      ? Colors.grey[300]
+                      : Colors.grey[100],
+                ),
                 onPressed: () {
-                  print("정기고사");
+                  setState(() {
+                    currentTimeTable = regularExam;
+                    isRegularExam = true;
+                  });
                 },
                 child: const Text('정기고사')),
           ],

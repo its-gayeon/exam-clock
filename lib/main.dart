@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_clock/one_clock.dart';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +41,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  DateTime _currentTime = DateTime.now();
+  late Timer _timer;
+
   final List<List<String>> secondThirdGrade = [
     ["교시", "시간", " ", "문항수", "과목"],
     ["1", "08:30 ~ 09:50", "80분", "45", "국어"],
@@ -74,6 +78,18 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     currentTimeTable = firstGrade;
+    // 타이머로 현재 시간을 업데이트
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _currentTime = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
   }
 
   bool isCurrentTimeSlot(String timeSlot) {
@@ -112,9 +128,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     DigitalClock(
                       showSeconds: true,
-                      isLive: true,
+                      isLive: false,
                       textScaleFactor: 3,
-                      datetime: DateTime.now(),
+                      datetime: _currentTime,
                     ),
                     if (isRegularExam)
                       Padding(
